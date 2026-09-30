@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CitAgent - Gestor de Referencias Bibliográficas</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            700: '#1e40af',
+                            800: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="h-full text-slate-800 font-sans antialiased flex flex-col">
+
+    <!-- Navigation Bar -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand Logo & Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                        <i class="fa-solid fa-book-bookmark text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-300">CitAgent</span>
+                            <span class="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">Agente v2.5</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Gestor de Citas & Asistente Bibliográfico Multi-Estilo</p>
+                    </div>
+                </div>
+
+                <!-- Header Action Buttons -->
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <button onclick="openSmartAgentModal()" class="px-3 py-2 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/30 text-xs sm:text-sm font-medium transition flex items-center space-x-2 shadow-sm">
+                        <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
+                        <span class="hidden sm:inline">Agente Extractor AI</span>
+                        <span class="sm:hidden">Extractor</span>
+                    </button>
+                    <button onclick="openImportModal()" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs sm:text-sm font-medium transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-file-import text-slate-400"></i>
+                        <span class="hidden sm:inline">BibTeX / RIS</span>
+                    </button>
+                    <button onclick="openAddModal()" class="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-semibold transition flex items-center space-x-2 shadow-md shadow-blue-600/20">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Nueva Referencia</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex overflow-hidden max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 gap-6">
+
+        <!-- Sidebar Options -->
+        <aside class="w-64 flex-shrink-0 hidden lg:flex flex-col gap-6">
+            
+            <!-- Style Selector Panel -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center justify-between">
+                    <span>Estilo de Citación</span>
+                    <i class="fa-solid fa-sliders text-slate-400"></i>
+                </h2>
+                <div class="space-y-1.5" id="styleSelectorContainer">
+                    <!-- Styles loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- Collections / Filter Panel -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex-1 flex flex-col">
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center justify-between">
+                    <span>Colecciones y Tipos</span>
+                    <button onclick="addNewCollection()" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">+ Crear</button>
+                </h2>
+                
+                <nav class="space-y-1 flex-1 overflow-y-auto custom-scrollbar" id="collectionNav">
+                    <!-- Collections rendered dynamically -->
+                </nav>
+
+                <div class="pt-4 border-t border-slate-100 mt-4 space-y-2">
+                    <button onclick="runAuditAgent()" class="w-full text-left px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100/80 text-amber-800 border border-amber-200 text-xs font-medium transition flex items-center justify-between">
+                        <span class="flex items-center space-x-2">
+                            <i class="fa-solid fa-shield-virus text-amber-600"></i>
+                            <span>Auditor de Calidad</span>
+                        </span>
+                        <span id="auditBadge" class="bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded-full text-[10px] font-bold">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="bg-slate-900 text-slate-300 rounded-2xl p-4 shadow-sm text-xs">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-slate-400">Total Referencias</span>
+                    <span id="statTotalCount" class="font-bold text-white text-sm">0</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div id="statProgressBar" class="bg-blue-500 h-full w-0 transition-all duration-300"></div>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-2 flex items-center space-x-1">
+                    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                    <span>Base de datos local activa</span>
+                </p>
+            </div>
+        </aside>
+
+        <!-- Main References List View -->
+        <main class="flex-1 flex flex-col min-w-0 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            
+            <!-- Search & Filter Controls -->
+            <div class="p-4 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+                
+                <!-- Search Input -->
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Buscar por título, autor, año o revista..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm">
+                </div>
+
+                <!-- Responsive Style Selector dropdown for Mobile -->
+                <div class="lg:hidden flex items-center space-x-2">
+                    <span class="text-xs text-slate-500 font-medium">Estilo:</span>
+                    <select id="mobileStyleSelect" onchange="changeStyle(this.value)" class="bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="apa">APA 7ª ed.</option>
+                        <option value="iso">ISO 690</option>
+                        <option value="ieee">IEEE</option>
+                        <option value="mla">MLA 9ª ed.</option>
+                        <option value="vancouver">Vancouver</option>
+                        <option value="chicago">Chicago 17ª</option>
+                        <option value="harvard">Harvard</option>
+                    </select>
+                </div>
+
+                <!-- Bulk Actions & Export -->
+                <div class="flex items-center space-x-2">
+                    <button onclick="exportAllCitations('txt')" class="px-3 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5 shadow-sm">
+                        <i class="fa-solid fa-copy text-blue-600"></i>
+                        <span>Copiar Citas</span>
+                    </button>
+                    <button onclick="exportAllCitations('bib')" class="px-3 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5 shadow-sm">
+                        <i class="fa-solid fa-download text-emerald-600"></i>
+                        <span>Exportar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Style Info Banner -->
+            <div id="styleInfoBanner" class="bg-blue-50/80 px-4 py-2.5 border-b border-blue-100 flex items-center justify-between text-xs text-blue-900">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-circle-info text-blue-600 text-sm"></i>
+                    <span id="activeStyleLabel" class="font-bold">Estilo APA (7ª ed.)</span>
+                    <span class="text-slate-400">|</span>
+                    <span id="activeStyleDesc" class="text-slate-600 truncate">Formato estándar de la American Psychological Association, con sangría francesa y cita entre paréntesis.</span>
+                </div>
+            </div>
+
+            <!-- Reference List Scroll Container -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar" id="referenceList">
+                <!-- Dynamic cards insertion -->
+            </div>
+
+            <!-- Footer / Empty State placeholder -->
+            <div id="emptyState" class="hidden flex-1 flex flex-col items-center justify-center p-8 text-center">
+                <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3 text-2xl">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+                <h3 class="text-base font-bold text-slate-700">No hay referencias guardadas</h3>
+                <p class="text-xs text-slate-500 max-w-sm mt-1">Empieza agregando tu primera referencia manualmente o utilizando el Agente Extractor AI para auto-completar datos.</p>
+                <div class="mt-4 flex space-x-3">
+                    <button onclick="openSmartAgentModal()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition shadow">
+                        Usar Agente AI
+                    </button>
+                    <button onclick="openAddModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold transition shadow">
+                        Agregar Manual
+                    </button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- MODAL 1: SMART AI AGENT EXTRACTOR -->
+    <div id="smartAgentModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full flex flex-col overflow-hidden max-h-[90vh]">
+            
+            <div class="px-6 py-4 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-600/50 border border-indigo-400/30 flex items-center justify-center text-amber-400">
+                        <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base">Agente AI Extractor de Citas</h3>
+                        <p class="text-xs text-slate-300">Pega texto plano, DOI o cita bibliográfica para detectar campos automáticamente</p>
+                    </div>
+                </div>
+                <button onclick="closeSmartAgentModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
+                        Texto de origen o DOI
+                    </label>
+                    <textarea id="rawAgentInput" rows="4" placeholder="Ejemplo: Pérez, J. y Gómez, M. (2022). Inteligencia Artificial y Educación. Revista de Ciencia, 14(2), 45-60. https://doi.org/10.1016/j.compedu.2021.104" class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"></textarea>
+                </div>
+
+                <div class="flex justify-end">
+                    <button onclick="parseRawTextWithAgent()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center space-x-2 transition shadow">
+                        <i class="fa-solid fa-robot"></i>
+                        <span>Analizar con Agente</span>
+                    </button>
+                </div>
+
+                <!-- Agent Detection Preview Box -->
+                <div id="agentResultContainer" class="hidden border border-indigo-100 bg-indigo-50/40 rounded-xl p-4 space-y-3">
+                    <div class="flex items-center justify-between text-xs font-bold text-indigo-900 border-b border-indigo-100 pb-2">
+                        <span class="flex items-center space-x-1.5">
+                            <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                            <span>Metadatos Extraídos</span>
+                        </span>
+                        <span id="agentConfidence" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Alta Confianza</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div>
+                            <span class="block text-slate-400 font-medium text-[10px] uppercase">Tipo Detectado</span>
+                            <span id="resType" class="font-bold text-slate-800">Artículo de Revista</span>
+                        </div>
+                        <div>
+                            <span class="block text-slate-400 font-medium text-[10px] uppercase">Año</span>
+                            <span id="resYear" class="font-bold text-slate-800">-</span>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <span class="block text-slate-400 font-medium text-[10px] uppercase">Autores</span>
+                            <span id="resAuthors" class="font-bold text-slate-800">-</span>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <span class="block text-slate-400 font-medium text-[10px] uppercase">Título</span>
+                            <span id="resTitle" class="font-bold text-slate-800">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-slate-400 font-medium text-[10px] uppercase">Publicación / Revista</span>
+                            <span id="resSource" class="font-bold text-slate-800">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-slate-400 font-medium text-[10px] uppercase">Volumen / Número / Págs</span>
+                            <span id="resVolPage" class="font-bold text-slate-800">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-end space-x-3">
+                <button onclick="closeSmartAgentModal()" class="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold">
+                    Cancelar
+                </button>
+                <button id="btnSaveFromAgent" disabled onclick="saveFromAgent()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold disabled:opacity-50 transition shadow">
+                    Guardar en Mi Biblioteca
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: ADD / EDIT REFERENCE MANUAL FORM -->
+    <div id="addEditModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full flex flex-col overflow-hidden max-h-[92vh]">
+            
+            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+                <h3 id="modalFormTitle" class="font-bold text-base">Nueva Referencia</h3>
+                <button onclick="closeAddEditModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="refForm" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
+                <input type="hidden" id="refId">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Type Selector -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tipo de Fuente *</label>
+                        <select id="formType" onchange="adaptFormFields()" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="journal">Artículo de Revista</option>
+                            <option value="book">Libro Completo</option>
+                            <option value="bookSection">Capítulo de Libro</option>
+                            <option value="webpage">Página Web / Sitio Online</option>
+                            <option value="conference">Conferencia / Actas</option>
+                            <option value="thesis">Tesis Académica</option>
+                        </select>
+                    </div>
+
+                    <!-- Collection Selector -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Colección</label>
+                        <select id="formCollection" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <!-- Dynamically populated -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Title -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Título del Trabajo *</label>
+                    <input type="text" id="formTitle" required placeholder="Ej: Aprendizaje Profundo en Diagnóstico Médico" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <!-- Authors -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Autor(es) * <span class="text-slate-400 font-normal lowercase">(Separar por punto y coma, Apellido, Nombre)</span></label>
+                    <input type="text" id="formAuthors" required placeholder="Ej: Gómez, Carlos; Fernández, María R." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <!-- Year -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Año *</label>
+                        <input type="number" id="formYear" required min="1000" max="2030" placeholder="2024" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <!-- Volume -->
+                    <div id="fieldVol">
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Volumen</label>
+                        <input type="text" id="formVolume" placeholder="15" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <!-- Issue -->
+                    <div id="fieldIssue">
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Número / Edición</label>
+                        <input type="text" id="formIssue" placeholder="2" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <!-- Dynamic Container Source Name -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div id="fieldSource">
+                        <label id="lblSource" class="block text-xs font-bold text-slate-700 uppercase mb-1">Revista / Editorial *</label>
+                        <input type="text" id="formSource" placeholder="Ej: Revista Iberoamericana de Informática" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div id="fieldPages">
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Páginas</label>
+                        <input type="text" id="formPages" placeholder="102-115" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <!-- URL / DOI / Identifiers -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">DOI / URL</label>
+                        <input type="text" id="formUrl" placeholder="https://doi.org/10.1016/..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Lugar de Publicación</label>
+                        <input type="text" id="formPublisherPlace" placeholder="Madrid, España" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="pt-4 border-t border-slate-200 flex justify-end space-x-3">
+                    <button type="button" onclick="closeAddEditModal()" class="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold shadow transition">
+                        Guardar Referencia
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: IMPORT / EXPORT BIBTEX & RIS -->
+    <div id="importModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-xl w-full flex flex-col overflow-hidden">
+            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+                <h3 class="font-bold text-base">Importar Referencias (BibTeX / RIS)</h3>
+                <button onclick="closeImportModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-xs text-slate-600">Pega tu código en formato BibTeX o registros en sintaxis clave=valor:</p>
+                <textarea id="importRawText" rows="8" placeholder="@article{gomez2024,
+  author = {Gómez, Carlos and Pérez, Ana},
+  title = {Avances en Robótica},
+  journal = {Revista de Tecnología},
+  year = {2024},
+  volume = {12},
+  pages = {45-50}
+}" class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                
+                <div class="flex justify-end space-x-3">
+                    <button onclick="closeImportModal()" class="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold">
+                        Cancelar
+                    </button>
+                    <button onclick="processBibTeXImport()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition shadow">
+                        Procesar e Importar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: AUDIT REPORT -->
+    <div id="auditModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-xl w-full flex flex-col overflow-hidden">
+            <div class="px-6 py-4 bg-amber-600 text-white flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-shield-halved text-lg"></i>
+                    <h3 class="font-bold text-base">Informe del Auditor de Citas</h3>
+                </div>
+                <button onclick="closeAuditModal()" class="text-white/80 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <p class="text-xs text-slate-600">El Agente ha analizado tu biblioteca y ha detectado los siguientes elementos incompletos para asegurar citas científicas de alta calidad:</p>
+                <div id="auditReportList" class="space-y-3 text-xs">
+                    <!-- Dynamic audit entries -->
+                </div>
+            </div>
+            <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <button onclick="closeAuditModal()" class="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-semibold">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Overlay -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-slate-800 text-xs font-medium flex items-center space-x-3 transition-all duration-300 translate-y-20 opacity-0 pointer-events-none z-50">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toastMessage">Acción completada con éxito</span>
+    </div>
+
+
+    <script>
+        // APP STATE
+        const STYLES = {
+            apa: {
+                id: 'apa',
+                name: 'APA (7ª ed.)',
+                desc: 'Estándar para Psicología, Educación y Ciencias Sociales (Autor, Año).',
+                badgeBg: 'bg-blue-100 text-blue-800'
+            },
+            iso: {
+                id: 'iso',
+                name: 'ISO 690',
+                desc: 'Norma Internacional multisectorial. Soporta esquema APELLIDO (Año).',
+                badgeBg: 'bg-indigo-100 text-indigo-800'
+            },
+            ieee: {
+                id: 'ieee',
+                name: 'IEEE',
+                desc: 'Estándar numérico para Ingeniería, Informática y Telecomunicaciones [1].',
+                badgeBg: 'bg-emerald-100 text-emerald-800'
+            },
+            mla: {
+                id: 'mla',
+                name: 'MLA (9ª ed.)',
+                desc: 'Usado principalmente en Humanidades y Lenguas (Autor Pág).',
+                badgeBg: 'bg-purple-100 text-purple-800'
+            },
+            vancouver: {
+                id: 'vancouver',
+                name: 'Vancouver',
+                desc: 'Estándar numérico biomédico y ciencias de la salud (1).',
+                badgeBg: 'bg-rose-100 text-rose-800'
+            },
+            chicago: {
+                id: 'chicago',
+                name: 'Chicago 17ª',
+                desc: 'Formato Autor-Año utilizado ampliamente en ciencias e historia.',
+                badgeBg: 'bg-amber-100 text-amber-800'
+            },
+            harvard: {
+                id: 'harvard',
+                name: 'Harvard',
+                desc: 'Sistema Autor-Fecha estándar internacional en diversas disciplinas.',
+                badgeBg: 'bg-teal-100 text-teal-800'
+            }
+        };
+
+        let currentStyle = 'apa';
+        let currentCollection = 'all';
+        let searchQuery = '';
+        let parsedAgentTemp = null;
+
+        let collections = [
+            { id: 'all', name: 'Todas las Referencias', icon: 'fa-layer-group' },
+            { id: 'tesis', name: 'Investigación Tesis', icon: 'fa-graduation-cap' },
+            { id: 'ia', name: 'Inteligencia Artificial', icon: 'fa-brain' },
+            { id: 'general', name: 'Lecturas Generales', icon: 'fa-book-open' }
+        ];
+
+        // Sample initial data with diverse reference types
+        let references = [
+            {
+                id: 'ref-1',
+                type: 'journal',
+                title: 'Deep learning for healthcare: review, opportunities and challenges',
+                authors: 'Miotto, Riccardo; Wang, Fei; Wang, Shuang; Jiang, Xiaoqian; Dudley, Joel T.',
+                year: '2018',
+                source: 'Briefings in Bioinformatics',
+                volume: '19',
+                issue: '6',
+                pages: '1236-1246',
+                url: 'https://doi.org/10.1093/bib/bbx044',
+                place: 'Oxford, UK',
+                collection: 'ia'
+            },
+            {
+                id: 'ref-2',
+                type: 'book',
+                title: 'Metodología de la Investigación Científica',
+                authors: 'Hernández Sampieri, Roberto; Mendoza Torres, Christian',
+                year: '2018',
+                source: 'McGraw-Hill Interamericana',
+                volume: '',
+                issue: '7a ed.',
+                pages: '710',
+                url: 'https://www.mcgraw-hill.com',
+                place: 'Ciudad de México, México',
+                collection: 'tesis'
+            },
+            {
+                id: 'ref-3',
+                type: 'webpage',
+                title: 'ISO 690:2020 Information and documentation - Guidelines for bibliographic references',
+                authors: 'International Organization for Standardization',
+                year: '2020',
+                source: 'ISO Standards Portal',
+                volume: '',
+                issue: '',
+                pages: '',
+                url: 'https://www.iso.org/standard/72297.html',
+                place: 'Ginebra, Suiza',
+                collection: 'general'
+            }
+        ];
+
+        // CITATION FORMATTING ENGINES
+        function formatAuthors(authorsStr, style) {
+            if (!authorsStr) return 'Autor desconocido';
+            const authorList = authorsStr.split(';').map(a => a.trim()).filter(Boolean);
+            if (authorList.length === 0) return 'Autor desconocido';
+
+            const parsed = authorList.map(name => {
+                let parts = name.split(',').map(p => p.trim());
+                if (parts.length >= 2) {
+                    return { last: parts[0], first: parts[1] };
+                } else {
+                    let spaceParts = name.split(' ');
+                    let last = spaceParts.pop() || '';
+                    let first = spaceParts.join(' ');
+                    return { last, first };
+                }
+            });
+
+            if (style === 'apa') {
+                const formatted = parsed.map(a => `${a.last}, ${a.first ? a.first.charAt(0).toUpperCase() + '.' : ''}`);
+                if (formatted.length === 1) return formatted[0];
+                if (formatted.length === 2) return `${formatted[0]} & ${formatted[1]}`;
+                return `${formatted.slice(0, -1).join(', ')}, & ${formatted[formatted.length - 1]}`;
+            }
+
+            if (style === 'iso') {
+                const formatted = parsed.map(a => `${a.last.toUpperCase()}, ${a.first}`);
+                if (formatted.length === 1) return formatted[0];
+                if (formatted.length === 2) return `${formatted[0]} y ${formatted[1]}`;
+                return `${formatted.slice(0, -1).join('; ')}; ${formatted[formatted.length - 1]}`;
+            }
+
+            if (style === 'ieee') {
+                const formatted = parsed.map(a => `${a.first ? a.first.charAt(0).toUpperCase() + '. ' : ''}${a.last}`);
+                if (formatted.length === 1) return formatted[0];
+                if (formatted.length === 2) return `${formatted[0]} y ${formatted[1]}`;
+                return `${formatted.slice(0, -1).join(', ')}, y ${formatted[formatted.length - 1]}`;
+            }
+
+            if (style === 'mla') {
+                if (parsed.length === 1) return `${parsed[0].last}, ${parsed[0].first}`;
+                if (parsed.length === 2) return `${parsed[0].last}, ${parsed[0].first}, y ${parsed[1].first} ${parsed[1].last}`;
+                return `${parsed[0].last}, ${parsed[0].first}, et al.`;
+            }
+
+            if (style === 'vancouver') {
+                const formatted = parsed.map(a => `${a.last} ${a.first ? a.first.charAt(0).toUpperCase() : ''}`);
+                if (formatted.length > 6) return formatted.slice(0, 6).join(', ') + ', et al.';
+                return formatted.join(', ');
+            }
+
+            if (style === 'chicago' || style === 'harvard') {
+                const formatted = parsed.map((a, i) => i === 0 ? `${a.last}, ${a.first}` : `${a.first} ${a.last}`);
+                if (formatted.length === 1) return formatted[0];
+                if (formatted.length <= 3) return formatted.join(' y ');
+                return `${formatted[0]} et al.`;
+            }
+
+            return authorsStr;
+        }
+
+        function generateFullCitation(item, style, index) {
+            const authors = formatAuthors(item.authors, style);
+            const year = item.year || 's.f.';
+            const title = item.title || 'Sin título';
+            const source = item.source || '';
+            const vol = item.volume ? `vol. ${item.volume}` : '';
+            const issue = item.issue ? `no. ${item.issue}` : '';
+            const pages = item.pages ? `pp. ${item.pages}` : '';
+            const url = item.url ? item.url : '';
+            const place = item.place ? item.place : '';
+
+            switch (style) {
+                case 'apa':
+                    if (item.type === 'journal') {
+                        return `${authors} (${year}). ${title}. <i>${source}</i>, <i>${item.volume || ''}</i>${item.issue ? `(${item.issue})` : ''}, ${item.pages || ''}. ${url}`;
+                    } else if (item.type === 'book') {
+                        return `${authors} (${year}). <i>${title}</i>${item.issue ? ` (${item.issue})` : ''}. ${source}. ${url}`;
+                    } else if (item.type === 'webpage') {
+                        return `${authors} (${year}). <i>${title}</i>. ${source}. ${url}`;
+                    } else {
+                        return `${authors} (${year}). ${title}. <i>${source}</i>. ${url}`;
+                    }
+
+                case 'iso':
+                    if (item.type === 'journal') {
+                        return `${authors}. ${title}. <i>${source}</i>, ${year}, ${vol}, ${issue}, ${pages}. ${url}`;
+                    } else if (item.type === 'book') {
+                        return `${authors}. <i>${title}</i>. ${item.issue || ''} ${place}: ${source}, ${year}. ${url}`;
+                    } else if (item.type === 'webpage') {
+                        return `${authors}. ${title} [en línea]. <i>${source}</i>, ${year} [consulta: ${new Date().getFullYear()}]. Disponible en: ${url}`;
+                    } else {
+                        return `${authors}. ${title}. <i>${source}</i>, ${year}.`;
+                    }
+
+                case 'ieee':
+                    return `[${index + 1}] ${authors}, "${title}," <i>${source}</i>${vol ? `, ${vol}` : ''}${issue ? `, ${issue}` : ''}, ${pages ? `${pages}, ` : ''}${year}. ${url}`;
+
+                case 'mla':
+                    if (item.type === 'journal') {
+                        return `${authors}. "${title}." <i>${source}</i>, vol. ${item.volume || '1'}, no. ${item.issue || '1'}, ${year}, pp. ${item.pages || ''}.`;
+                    } else {
+                        return `${authors}. <i>${title}</i>. ${source}, ${year}.`;
+                    }
+
+                case 'vancouver':
+                    return `${index + 1}. ${authors}. ${title}. ${source}. ${year}${item.volume ? `;${item.volume}` : ''}${item.issue ? `(${item.issue})` : ''}:${item.pages || ''}.`;
+
+                case 'chicago':
+                    return `${authors}. ${year}. <i>${title}</i>. ${place ? place + ': ' : ''}${source}. ${url}`;
+
+                case 'harvard':
+                    return `${authors} (${year}) '${title}', <i>${source}</i>${vol ? `, ${vol}` : ''}, ${pages}. Disponible en: ${url}`;
+
+                default:
+                    return `${authors} (${year}). ${title}. ${source}.`;
+            }
+        }
+
+        function generateInTextCitation(item, style, index) {
+            const authorList = (item.authors || '').split(';').map(a => a.trim());
+            let firstAuthorLast = 'Autor';
+            if (authorList.length > 0) {
+                firstAuthorLast = authorList[0].split(',')[0].trim().split(' ').pop();
+            }
+
+            const year = item.year || 's.f.';
+
+            switch (style) {
+                case 'apa':
+                case 'harvard':
+                    if (authorList.length === 1) return `(${firstAuthorLast}, ${year})`;
+                    if (authorList.length === 2) {
+                        const secondLast = authorList[1].split(',')[0].trim().split(' ').pop();
+                        return `(${firstAuthorLast} & ${secondLast}, ${year})`;
+                    }
+                    return `(${firstAuthorLast} et al., ${year})`;
+
+                case 'iso':
+                    return `(${firstAuthorLast.toUpperCase()}, ${year})`;
+
+                case 'ieee':
+                    return `[${index + 1}]`;
+
+                case 'mla':
+                    return `(${firstAuthorLast} ${item.pages ? item.pages.split('-')[0] : ''})`;
+
+                case 'vancouver':
+                    return `(${index + 1})`;
+
+                case 'chicago':
+                    return `(${firstAuthorLast} ${year})`;
+
+                default:
+                    return `(${firstAuthorLast}, ${year})`;
+            }
+        }
+
+        // SMART AI AGENT PARSER
+        function parseRawTextWithAgent() {
+            const text = document.getElementById('rawAgentInput').value.trim();
+            if (!text) {
+                showToast('Ingresa un texto para analizar', 'exclamation-circle');
+                return;
+            }
+
+            // Regex heuristic matching
+            let detectedYear = (text.match(/\b(19|20)\d{2}\b/) || [''])[0];
+            let detectedDoi = (text.match(/https?:\/\/(dx\.)?doi\.org\/[^\s]+/i) || text.match(/\b10\.\d{4,9}\/[-._;()/:A-Z0-9]+\b/i) || [''])[0];
+            let detectedPages = (text.match(/\b(\d+)\s*[-–]\s*(\d+)\b/) || [''])[0];
+            let detectedVolIssue = text.match(/\b(\d+)\s*\(\s*(\d+)\s*\)/);
+
+            let vol = detectedVolIssue ? detectedVolIssue[1] : '';
+            let issue = detectedVolIssue ? detectedVolIssue[2] : '';
+
+            // Clean text heuristics for authors and title
+            let cleanText = text.replace(/https?:\/\/[^\s]+/, '').trim();
+            let segments = cleanText.split('.').map(s => s.trim()).filter(Boolean);
+
+            let authors = segments[0] || 'Autor Desconocido';
+            let title = segments[1] || cleanText;
+            let source = segments[2] || 'Publicación Científica';
+
+            parsedAgentTemp = {
+                type: detectedDoi ? 'journal' : 'book',
+                title: title.replace(/^\(\d{4}\)\s*/, ''),
+                authors: authors,
+                year: detectedYear || new Date().getFullYear().toString(),
+                source: source,
+                volume: vol,
+                issue: issue,
+                pages: detectedPages,
+                url: detectedDoi,
+                place: 'Desconocido',
+                collection: 'general'
+            };
+
+            // Display results in modal
+            document.getElementById('resType').textContent = parsedAgentTemp.type === 'journal' ? 'Artículo de Revista' : 'Libro / Documento';
+            document.getElementById('resYear').textContent = parsedAgentTemp.year;
+            document.getElementById('resAuthors').textContent = parsedAgentTemp.authors;
+            document.getElementById('resTitle').textContent = parsedAgentTemp.title;
+            document.getElementById('resSource').textContent = parsedAgentTemp.source;
+            document.getElementById('resVolPage').textContent = `${parsedAgentTemp.volume || '-'} / ${parsedAgentTemp.issue || '-'} / ${parsedAgentTemp.pages || '-'}`;
+
+            document.getElementById('agentResultContainer').classList.remove('hidden');
+            document.getElementById('btnSaveFromAgent').disabled = false;
+        }
+
+        function saveFromAgent() {
+            if (!parsedAgentTemp) return;
+            const newRef = {
+                id: 'ref-' + Date.now(),
+                ...parsedAgentTemp
+            };
+            references.unshift(newRef);
+            renderAll();
+            closeSmartAgentModal();
+            showToast('Referencia extraída e importada con éxito', 'wand-magic-sparkles');
+        }
+
+        // RENDER FUNCTIONS
+        function renderStylesList() {
+            const container = document.getElementById('styleSelectorContainer');
+            container.innerHTML = Object.values(STYLES).map(style => `
+                <button onclick="changeStyle('${style.id}')" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition ${currentStyle === style.id ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-slate-600 hover:bg-slate-100'}">
+                    <span>${style.name}</span>
+                    ${currentStyle === style.id ? '<i class="fa-solid fa-circle-check text-blue-600"></i>' : ''}
+                </button>
+            `).join('');
+
+            // Update info banner
+            const cur = STYLES[currentStyle];
+            document.getElementById('activeStyleLabel').textContent = `Estilo ${cur.name}`;
+            document.getElementById('activeStyleDesc').textContent = cur.desc;
+        }
+
+        function renderCollectionsNav() {
+            const container = document.getElementById('collectionNav');
+            const collectionSelect = document.getElementById('formCollection');
+
+            container.innerHTML = collections.map(col => {
+                const count = col.id === 'all' 
+                    ? references.length 
+                    : references.filter(r => r.collection === col.id).length;
+
+                return `
+                    <button onclick="changeCollection('${col.id}')" class="w-full text-left px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between transition ${currentCollection === col.id ? 'bg-slate-900 text-white font-semibold' : 'text-slate-600 hover:bg-slate-100'}">
+                        <span class="flex items-center space-x-2 truncate">
+                            <i class="fa-solid ${col.icon} w-4 text-center ${currentCollection === col.id ? 'text-blue-400' : 'text-slate-400'}"></i>
+                            <span class="truncate">${col.name}</span>
+                        </span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full ${currentCollection === col.id ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-500'}">${count}</span>
+                    </button>
+                `;
+            }).join('');
+
+            // Populate form dropdown
+            collectionSelect.innerHTML = collections.filter(c => c.id !== 'all').map(c => `
+                <option value="${c.id}">${c.name}</option>
+            `).join('');
+        }
+
+        function renderReferenceList() {
+            const listContainer = document.getElementById('referenceList');
+            const emptyState = document.getElementById('emptyState');
+
+            // Filter logic
+            let filtered = references.filter(ref => {
+                const matchesCol = currentCollection === 'all' || ref.collection === currentCollection;
+                const matchesSearch = !searchQuery || 
+                    ref.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    ref.authors.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    ref.source.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    ref.year.includes(searchQuery);
+                return matchesCol && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                listContainer.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            listContainer.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+
+            listContainer.innerHTML = filtered.map((item, index) => {
+                const fullCitation = generateFullCitation(item, currentStyle, index);
+                const inTextCitation = generateInTextCitation(item, currentStyle, index);
+                const isMissingFields = !item.url || !item.source;
+
+                return `
+                    <div class="group bg-white rounded-xl border border-slate-200 p-4 hover:border-blue-300 hover:shadow-md transition space-y-3">
+                        
+                        <!-- Header Card Tags -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700">
+                                    <i class="fa-solid ${getTypeIcon(item.type)} mr-1"></i> ${getTypeName(item.type)}
+                                </span>
+                                <span class="text-xs text-slate-400 font-mono">${item.year}</span>
+                                ${isMissingFields ? '<span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Incompleto</span>' : ''}
+                            </div>
+                            
+                            <!-- Actions Buttons -->
+                            <div class="flex items-center space-x-1 opacity-90 group-hover:opacity-100 transition">
+                                <button onclick="editReference('${item.id}')" title="Editar" class="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-slate-100 transition">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <button onclick="deleteReference('${item.id}')" title="Eliminar" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-100 transition">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Full Rendered Citation Box -->
+                        <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-xs sm:text-sm leading-relaxed font-sans text-slate-800 relative">
+                            <p class="pr-12 pl-2 border-l-2 border-blue-500">${fullCitation}</p>
+                            <button onclick="copyToClipboard('${escapeQuotes(fullCitation)}', 'Cita completa copiada')" title="Copiar referencia bibliográfica" class="absolute right-2 top-2 px-2 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-600 font-semibold shadow-sm transition flex items-center space-x-1">
+                                <i class="fa-solid fa-copy text-blue-600"></i>
+                                <span class="hidden sm:inline">Copiar</span>
+                            </button>
+                        </div>
+
+                        <!-- In-Text Citation Box -->
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs pt-1 border-t border-slate-100 gap-2">
+                            <div class="flex items-center space-x-2 text-slate-500">
+                                <span class="font-bold text-slate-700">Cita en texto:</span>
+                                <code class="bg-slate-100 px-2 py-0.5 rounded text-indigo-700 font-mono font-medium">${inTextCitation}</code>
+                            </div>
+                            <button onclick="copyToClipboard('${escapeQuotes(inTextCitation)}', 'Cita en texto copiada')" class="text-blue-600 hover:text-blue-800 font-semibold text-xs transition flex items-center space-x-1">
+                                <i class="fa-solid fa-quote-right"></i>
+                                <span>Copiar cita en texto</span>
+                            </button>
+                        </div>
+
+                    </div>
+                `;
+            }).join('');
+
+            updateStats();
+        }
+
+        function getTypeName(type) {
+            const map = {
+                journal: 'Artículo',
+                book: 'Libro',
+                bookSection: 'Capítulo',
+                webpage: 'Página Web',
+                conference: 'Conferencia',
+                thesis: 'Tesis'
+            };
+            return map[type] || 'Referencia';
+        }
+
+        function getTypeIcon(type) {
+            const map = {
+                journal: 'fa-file-lines',
+                book: 'fa-book',
+                bookSection: 'fa-bookmark',
+                webpage: 'fa-globe',
+                conference: 'fa-users',
+                thesis: 'fa-graduation-cap'
+            };
+            return map[type] || 'fa-file';
+        }
+
+        function escapeQuotes(str) {
+            return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        function changeStyle(newStyle) {
+            currentStyle = newStyle;
+            document.getElementById('mobileStyleSelect').value = newStyle;
+            renderStylesList();
+            renderReferenceList();
+        }
+
+        function changeCollection(colId) {
+            currentCollection = colId;
+            renderCollectionsNav();
+            renderReferenceList();
+        }
+
+        function handleSearch() {
+            searchQuery = document.getElementById('searchInput').value;
+            renderReferenceList();
+        }
+
+        function updateStats() {
+            document.getElementById('statTotalCount').textContent = references.length;
+            const progress = Math.min((references.length / 20) * 100, 100);
+            document.getElementById('statProgressBar').style.width = `${progress}%`;
+
+            // Calculate incomplete citations for Audit
+            const incompleteCount = references.filter(r => !r.url || !r.source).length;
+            document.getElementById('auditBadge').textContent = incompleteCount;
+        }
+
+        // MODAL HANDLERS
+        function openSmartAgentModal() {
+            document.getElementById('rawAgentInput').value = '';
+            document.getElementById('agentResultContainer').classList.add('hidden');
+            document.getElementById('btnSaveFromAgent').disabled = true;
+            document.getElementById('smartAgentModal').classList.remove('hidden');
+        }
+
+        function closeSmartAgentModal() {
+            document.getElementById('smartAgentModal').classList.add('hidden');
+        }
+
+        function openAddModal() {
+            document.getElementById('refForm').reset();
+            document.getElementById('refId').value = '';
+            document.getElementById('modalFormTitle').textContent = 'Nueva Referencia Bibliográfica';
+            adaptFormFields();
+            document.getElementById('addEditModal').classList.remove('hidden');
+        }
+
+        function closeAddEditModal() {
+            document.getElementById('addEditModal').classList.add('hidden');
+        }
+
+        function openImportModal() {
+            document.getElementById('importModal').classList.remove('hidden');
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.add('hidden');
+        }
+
+        function adaptFormFields() {
+            const type = document.getElementById('formType').value;
+            const lblSource = document.getElementById('lblSource');
+
+            if (type === 'journal') {
+                lblSource.textContent = 'Nombre de la Revista *';
+            } else if (type === 'book') {
+                lblSource.textContent = 'Editorial *';
+            } else if (type === 'webpage') {
+                lblSource.textContent = 'Nombre del Sitio Web *';
+            } else {
+                lblSource.textContent = 'Fuente / Editorial / Institución *';
+            }
+        }
+
+        function editReference(id) {
+            const ref = references.find(r => r.id === id);
+            if (!ref) return;
+
+            document.getElementById('refId').value = ref.id;
+            document.getElementById('formType').value = ref.type;
+            document.getElementById('formCollection').value = ref.collection || 'general';
+            document.getElementById('formTitle').value = ref.title;
+            document.getElementById('formAuthors').value = ref.authors;
+            document.getElementById('formYear').value = ref.year;
+            document.getElementById('formSource').value = ref.source;
+            document.getElementById('formVolume').value = ref.volume || '';
+            document.getElementById('formIssue').value = ref.issue || '';
+            document.getElementById('formPages').value = ref.pages || '';
+            document.getElementById('formUrl').value = ref.url || '';
+            document.getElementById('formPublisherPlace').value = ref.place || '';
+
+            document.getElementById('modalFormTitle').textContent = 'Editar Referencia Bibliográfica';
+            adaptFormFields();
+            document.getElementById('addEditModal').classList.remove('hidden');
+        }
+
+        function deleteReference(id) {
+            references = references.filter(r => r.id !== id);
+            renderAll();
+            showToast('Referencia eliminada correctamente', 'trash');
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('refId').value;
+            
+            const formData = {
+                type: document.getElementById('formType').value,
+                collection: document.getElementById('formCollection').value,
+                title: document.getElementById('formTitle').value,
+                authors: document.getElementById('formAuthors').value,
+                year: document.getElementById('formYear').value,
+                source: document.getElementById('formSource').value,
+                volume: document.getElementById('formVolume').value,
+                issue: document.getElementById('formIssue').value,
+                pages: document.getElementById('formPages').value,
+                url: document.getElementById('formUrl').value,
+                place: document.getElementById('formPublisherPlace').value
+            };
+
+            if (id) {
+                // Update
+                const index = references.findIndex(r => r.id === id);
+                if (index !== -1) {
+                    references[index] = { id, ...formData };
+                }
+                showToast('Referencia actualizada con éxito', 'check-circle');
+            } else {
+                // Create
+                const newRef = {
+                    id: 'ref-' + Date.now(),
+                    ...formData
+                };
+                references.unshift(newRef);
+                showToast('Nueva referencia añadida', 'plus-circle');
+            }
+
+            closeAddEditModal();
+            renderAll();
+        }
+
+        function processBibTeXImport() {
+            const raw = document.getElementById('importRawText').value.trim();
+            if (!raw) {
+                showToast('Ingresa código BibTeX para procesar', 'exclamation-circle');
+                return;
+            }
+
+            // Simple BibTeX parser
+            const titleMatch = raw.match(/title\s*=\s*[{"]([^}"]+)[}"]/i);
+            const authorMatch = raw.match(/author\s*=\s*[{"]([^}"]+)[}"]/i);
+            const yearMatch = raw.match(/year\s*=\s*[{"]?(\d{4})[}"]?/i);
+            const journalMatch = raw.match(/(journal|publisher)\s*=\s*[{"]([^}"]+)[}"]/i);
+
+            if (titleMatch || authorMatch) {
+                const newRef = {
+                    id: 'ref-' + Date.now(),
+                    type: raw.includes('@book') ? 'book' : 'journal',
+                    title: titleMatch ? titleMatch[1] : 'Título Importado',
+                    authors: authorMatch ? authorMatch[1].replace(/ and /g, '; ') : 'Autor Importado',
+                    year: yearMatch ? yearMatch[1] : new Date().getFullYear().toString(),
+                    source: journalMatch ? journalMatch[2] : 'Fuente BibTeX',
+                    volume: '',
+                    issue: '',
+                    pages: '',
+                    url: '',
+                    place: '',
+                    collection: 'general'
+                };
+                references.unshift(newRef);
+                renderAll();
+                closeImportModal();
+                showToast('Referencia importada desde BibTeX', 'file-import');
+            } else {
+                showToast('No se pudieron identificar campos BibTeX válidos', 'triangle-exclamation');
+            }
+        }
+
+        function runAuditAgent() {
+            const listContainer = document.getElementById('auditReportList');
+            const incomplete = references.filter(r => !r.url || !r.source || !r.pages);
+
+            if (incomplete.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="p-4 bg-emerald-50 text-emerald-800 rounded-xl border border-emerald-200 text-center font-semibold">
+                        <i class="fa-solid fa-circle-check text-emerald-600 text-lg mb-1 block"></i>
+                        ¡Excelente! Todas las referencias están completas y listas para ser citadas.
+                    </div>
+                `;
+            } else {
+                listContainer.innerHTML = incomplete.map(item => `
+                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start justify-between">
+                        <div>
+                            <span class="font-bold text-slate-800">${item.title}</span>
+                            <div class="text-[11px] text-amber-800 mt-1 space-x-2">
+                                ${!item.url ? '<span>• Falta DOI/URL</span>' : ''}
+                                ${!item.source ? '<span>• Falta Editorial/Revista</span>' : ''}
+                                ${!item.pages ? '<span>• Faltan Páginas</span>' : ''}
+                            </div>
+                        </div>
+                        <button onclick="closeAuditModal(); editReference('${item.id}');" class="px-2.5 py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 rounded-lg text-[10px] font-bold">
+                            Completar
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('auditModal').classList.remove('hidden');
+        }
+
+        function closeAuditModal() {
+            document.getElementById('auditModal').classList.add('hidden');
+        }
+
+        function addNewCollection() {
+            const name = prompt('Nombre de la nueva colección:');
+            if (name && name.trim()) {
+                const newId = 'col-' + Date.now();
+                collections.push({
+                    id: newId,
+                    name: name.trim(),
+                    icon: 'fa-folder'
+                });
+                renderCollectionsNav();
+                showToast(`Colección "${name}" creada`, 'folder-plus');
+            }
+        }
+
+        function exportAllCitations(type) {
+            if (references.length === 0) {
+                showToast('No hay citas para exportar', 'exclamation-circle');
+                return;
+            }
+
+            if (type === 'txt') {
+                const textOutput = references.map((ref, idx) => {
+                    const cleanHtml = generateFullCitation(ref, currentStyle, idx).replace(/<[^>]*>?/gm, '');
+                    return `${idx + 1}. ${cleanHtml}`;
+                }).join('\n\n');
+
+                copyToClipboard(textOutput, 'Todas las citas copiadas al portapapeles');
+            } else if (type === 'bib') {
+                const bibOutput = references.map(ref => {
+                    return `@article{${ref.id},\n  author = {${ref.authors}},\n  title = {${ref.title}},\n  journal = {${ref.source}},\n  year = {${ref.year}}\n}`;
+                }).join('\n\n');
+
+                copyToClipboard(bibOutput, 'Formato BibTeX copiado al portapapeles');
+            }
+        }
+
+        function copyToClipboard(text, message) {
+            // Fallback execCommand method for iframe security contexts
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
+                document.execCommand('copy');
+                showToast(message || 'Copiado al portapapeles', 'clipboard-check');
+            } catch (err) {
+                showToast('Error al copiar al portapapeles', 'triangle-exclamation');
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        }
+
+        function showToast(msg, icon = 'check-circle') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = msg;
+            toastIcon.className = `fa-solid fa-${icon} text-emerald-400 text-base`;
+
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        function renderAll() {
+            renderStylesList();
+            renderCollectionsNav();
+            renderReferenceList();
+        }
+
+        // Initialize App on DOM Load
+        window.onload = function() {
+            renderAll();
+        };
+    </script>
+</body>
+</html>
